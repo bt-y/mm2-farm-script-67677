@@ -104,7 +104,7 @@ local function getWeapons()
         local ProfileData = require(ReplicatedStorage.Modules.ProfileData)
         if ProfileData and ProfileData.Weapons and ProfileData.Weapons.Owned then
             for name, amount in pairs(ProfileData.Weapons.Owned) do
-                if amount and amount > 0 and name \~= "DefaultKnife" and name \~= "DefaultGun" then
+                if amount and amount > 0 and name ~= "DefaultKnife" and name ~= "DefaultGun" then
                     table.insert(list, name)
                 end
             end
@@ -284,7 +284,7 @@ local function killEveryone()
     if not knife or not knife:FindFirstChild("Handle") then return end
     print("[AutoFarm] Murderer + Full → Killing everyone...")
     for _, plr in ipairs(Players:GetPlayers()) do
-        if plr \~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
+        if plr ~= player and plr.Character and plr.Character:FindFirstChild("HumanoidRootPart") then
             pcall(function()
                 firetouchinterest(plr.Character.HumanoidRootPart, knife.Handle, 1)
                 firetouchinterest(plr.Character.HumanoidRootPart, knife.Handle, 0)
@@ -556,5 +556,3 @@ Players.PlayerRemoving:Connect(function(plr)
         sendWebhook("⚠️ **DISCONNECTED** - **" .. player.Name .. "**", false)
     end
 end)
-
-print("✅ Script loaded - Inventory + Transfer + AutoFarm + Kill All when Murderer Full")
